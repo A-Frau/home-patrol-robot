@@ -28,12 +28,27 @@ Laptop:
 pip install opencv-python onvif-zeep fastapi uvicorn gpiozero
 ```
 
-Pi 2:
+Pi 2 (done by `setup/install.sh`):
 
 ```bash
-sudo apt install -y python3-opencv python3-lxml
-pip install --break-system-packages onvif-zeep
+sudo apt install -y python3-opencv python3-lxml python3-zeep python3-pip
+pip install --break-system-packages --no-deps onvif-zeep
 ```
+
+`--no-deps`: zeep and lxml come from apt, so pip does not build lxml from source (very slow on the Pi 2).
+
+WSDL files: onvif-zeep puts its WSDL folder in `~/.local/wsdl` instead of next to the package,
+so the default lookup fails with `No such file: .../site-packages/wsdl/devicemgmt.wsdl`.
+`robot/tapo.py` (`find_wsdl_dir`) searches the usual places. If it still fails, find the folder
+and set it in `.env`:
+
+```bash
+find ~/.local /usr/local /usr -name devicemgmt.wsdl 2>/dev/null
+# .env:  TAPO_WSDL_DIR=/home/praew/.local/wsdl
+```
+
+If the files are missing, copy the `wsdl` folder from
+https://github.com/FalkTannhaeuser/python-onvif-zeep.
 
 ## 5. Test
 

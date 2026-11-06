@@ -63,6 +63,9 @@ TAPO_FPS = 10            # frames per second sent to the web page (saves CPU on 
 TAPO_JPEG_QUALITY = 75
 TAPO_PAN_STEP = 0.1      # one button press moves this far (ONVIF range is -1 to 1)
 TAPO_TILT_STEP = 0.1
+# Folder with the ONVIF WSDL files (devicemgmt.wsdl, ...). Empty = search the usual
+# install places (see robot/tapo.py find_wsdl_dir).
+TAPO_WSDL_DIR = os.environ.get("TAPO_WSDL_DIR", "")
 
 # --- Web server ---
 WEB_HOST = "0.0.0.0"

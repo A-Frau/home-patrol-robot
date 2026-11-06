@@ -9,8 +9,12 @@ That username/password is what goes into TAPO_USER / TAPO_PASSWORD.
 
 import logging
 import os
+import site
+import sys
+import sysconfig
 import threading
 import time
+from pathlib import Path
 from urllib.parse import quote
 
 from robot import config
@@ -30,6 +34,34 @@ def rtsp_url(stream=None):
     )
 
 
+def find_wsdl_dir():
+    """Find the ONVIF WSDL folder that onvif-zeep needs.
+
+    onvif-zeep installs its WSDL files as data_files, so with `pip install --user`
+    (or --break-system-packages) they land in ~/.local/wsdl instead of next to the
+    package, and ONVIFCamera fails with "No such file: .../site-packages/wsdl/...".
+    Order: TAPO_WSDL_DIR, then the usual install places. Returns None if not found
+    (onvif-zeep then uses its own default).
+    """
+    candidates = []
+    if config.TAPO_WSDL_DIR:
+        candidates.append(Path(config.TAPO_WSDL_DIR).expanduser())
+    site_dirs = list(site.getsitepackages()) if hasattr(site, "getsitepackages") else []
+    site_dirs.append(site.getusersitepackages())
+    site_dirs.append(sysconfig.get_paths()["purelib"])
+    candidates += [Path(d) / "wsdl" for d in site_dirs]
+    candidates += [
+        Path(site.USER_BASE) / "wsdl",
+        Path(sys.prefix) / "wsdl",
+        Path("/usr/local/wsdl"),
+    ]
+    for folder in candidates:
+        if (folder / "devicemgmt.wsdl").is_file():
+            return str(folder)
+    log.warning("ONVIF WSDL folder not found, set TAPO_WSDL_DIR in .env")
+    return None
+
+
 class TapoPanTilt:
     """Pan/tilt through ONVIF. Tries RelativeMove, falls back to ContinuousMove + Stop."""
 
@@ -43,8 +75,16 @@ class TapoPanTilt:
     def __init__(self):
         from onvif import ONVIFCamera  # pip: onvif-zeep
 
+        kwargs = {}
+        wsdl_dir = find_wsdl_dir()
+        if wsdl_dir:
+            kwargs["wsdl_dir"] = wsdl_dir
         cam = ONVIFCamera(
-            config.TAPO_HOST, config.TAPO_ONVIF_PORT, config.TAPO_USER, config.TAPO_PASSWORD
+            config.TAPO_HOST,
+            config.TAPO_ONVIF_PORT,
+            config.TAPO_USER,
+            config.TAPO_PASSWORD,
+            **kwargs,
         )
         self._ptz = cam.create_ptz_service()
         self._token = cam.create_media_service().GetProfiles()[0].token
