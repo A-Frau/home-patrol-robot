@@ -12,7 +12,7 @@ sudo apt install -y --no-install-recommends python3-picamera2
 sudo apt install -y python3-opencv python3-lxml python3-zeep python3-pip
 # onvif-zeep is not in apt. --no-deps: its dependencies (zeep, lxml) come from apt above,
 # so pip does not try to build lxml from source on the Pi 2 (takes hours).
-# Its WSDL files land in ~/.local/wsdl; robot/tapo.py finds them there.
+# Its WSDL files land in ~/.local/lib/python3.4/site-packages/wsdl; robot/tapo.py finds them there.
 pip install --break-system-packages --no-deps onvif-zeep
 
 echo "Done. Test the camera:  python3 tools/test_camera.py"

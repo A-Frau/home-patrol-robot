@@ -37,14 +37,15 @@ pip install --break-system-packages --no-deps onvif-zeep
 
 `--no-deps`: zeep and lxml come from apt, so pip does not build lxml from source (very slow on the Pi 2).
 
-WSDL files: onvif-zeep puts its WSDL folder in `~/.local/wsdl` instead of next to the package,
+WSDL files: onvif-zeep does not put its WSDL folder next to the package. On the Pi it lands in
+`~/.local/lib/python3.4/site-packages/wsdl` (a path hard-coded in its setup.py, even on Python 3.13),
 so the default lookup fails with `No such file: .../site-packages/wsdl/devicemgmt.wsdl`.
 `robot/tapo.py` (`find_wsdl_dir`) searches the usual places. If it still fails, find the folder
 and set it in `.env`:
 
 ```bash
 find ~/.local /usr/local /usr -name devicemgmt.wsdl 2>/dev/null
-# .env:  TAPO_WSDL_DIR=/home/praew/.local/wsdl
+# .env:  TAPO_WSDL_DIR=/home/praew/.local/lib/python3.4/site-packages/wsdl
 ```
 
 If the files are missing, copy the `wsdl` folder from

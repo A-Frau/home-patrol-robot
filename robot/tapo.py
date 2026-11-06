@@ -55,6 +55,10 @@ def find_wsdl_dir():
         Path(sys.prefix) / "wsdl",
         Path("/usr/local/wsdl"),
     ]
+    # onvif-zeep's setup.py hard-codes "lib/python3.4/site-packages/wsdl" as the data
+    # path, so on newer Pythons the files end up under a python3.4 folder.
+    for base in (site.USER_BASE, sys.prefix, "/usr/local"):
+        candidates += sorted(Path(base).glob("lib/python*/site-packages/wsdl"))
     for folder in candidates:
         if (folder / "devicemgmt.wsdl").is_file():
             return str(folder)
