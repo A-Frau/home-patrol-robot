@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Patrol Robot</title>
+<style>
+  :root { --bg: #f4f4f2; --fg: #1d1d1b; --btn: #ffffff; --line: #d6d6d0; --accent: #2f6f4f; --stop: #b3261e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --fg: #ececea; --btn: #252523; --line: #3a3a37; --accent: #6fbf8f; --stop: #ef6b62; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+         font: 16px/1.4 system-ui, sans-serif; max-width: 520px; margin-inline: auto; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  .video { aspect-ratio: 4 / 3; background: #000; border-radius: 12px; overflow: hidden;
+           display: grid; place-items: center; color: #aaa; }
+  .video img { width: 100%; height: 100%; object-fit: cover; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;
+         touch-action: none; user-select: none; -webkit-user-select: none; }
+  button { height: 72px; font-size: 26px; border-radius: 14px; border: 1px solid var(--line);
+           background: var(--btn); color: var(--fg); -webkit-touch-callout: none; }
+  button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #stop { color: var(--stop); font-size: 16px; font-weight: 600; }
+  .look { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .look span { font-size: 14px; opacity: 0.75; margin-right: auto; }
+  .look button { height: 44px; width: 52px; font-size: 18px; }
+  .status { margin-top: 12px; font-size: 14px; opacity: 0.75; }
+</style>
+</head>
+<body>
+<h1>Patrol Robot</h1>
+<div class="video" id="video"><img src="/stream.mjpg" alt="Camera stream" id="stream"></div>
+
+<div class="pad">
+  <span></span><button data-dir="forward" aria-label="Forward">▲</button><span></span>
+  <button data-dir="left" aria-label="Left">◀</button>
+  <button id="stop" data-dir="stop">STOP</button>
+  <button data-dir="right" aria-label="Right">▶</button>
+  <span></span><button data-dir="backward" aria-label="Backward">▼</button><span></span>
+</div>
+<div class="look" id="look" hidden>
+  <span>Camera</span>
+  <button data-look="left" aria-label="Camera left">⟲</button>
+  <button data-look="up" aria-label="Camera up">⤒</button>
+  <button data-look="down" aria-label="Camera down">⤓</button>
+  <button data-look="right" aria-label="Camera right">⟳</button>
+</div>
+<div class="status" id="status">Connecting…</div>
+
+<script>
+  // Hold a button to drive. The command repeats every 300 ms so the
+  // server watchdog (1 s) keeps the motors running only while you hold.
+  let timer = null;
+
+  function send(direction) {
+    return fetch("/api/drive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direction }),
+    }).catch(() => {});
+  }
+
+  function start(btn) {
+    stop();
+    const dir = btn.dataset.dir;
+    if (dir === "stop") return;
+    btn.classList.add("active");
+    send(dir);
+    timer = setInterval(() => send(dir), 300);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    document.querySelectorAll("button.active").forEach(b => b.classList.remove("active"));
+    send("stop");
+  }
+
+  document.querySelectorAll(".pad button").forEach(btn => {
+    btn.addEventListener("pointerdown", e => { e.preventDefault(); btn.setPointerCapture(e.pointerId); start(btn); });
+    btn.addEventListener("pointerup", stop);
+    btn.addEventListener("pointercancel", stop);
+    btn.addEventListener("contextmenu", e => e.preventDefault());
+  });
+
+  // Keyboard: arrow keys on a laptop
+  const keys = { ArrowUp: "forward", ArrowDown: "backward", ArrowLeft: "left", ArrowRight: "right" };
+  document.addEventListener("keydown", e => {
+    if (!keys[e.key] || e.repeat) return;
+    start(document.querySelector(`[data-dir="${keys[e.key]}"]`));
+  });
+  document.addEventListener("keyup", e => { if (keys[e.key]) stop(); });
+
+  // Stop when the page is hidden (phone locked, app switched)
+  document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); });
+
+  document.getElementById("stream").addEventListener("error", () => {
+    document.getElementById("video").textContent = "No camera";
+  });
+
+  // Camera pan/tilt (Tapo): one tap = one small step
+  document.querySelectorAll("[data-look]").forEach(btn => {
+    btn.addEventListener("click", () => fetch("/api/look", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direction: btn.dataset.look }),
+    }).catch(() => {}));
+  });
+
+  async function poll() {
+    try {
+      const s = await (await fetch("/api/status")).json();
+      document.getElementById("look").hidden = !s.pan_tilt;
+      document.getElementById("status").textContent =
+        `${s.moving ? "Moving" : "Stopped"} · camera ${s.camera ? "on" : "off"}${s.mock ? " · mock mode" : ""}`;
+    } catch {
+      document.getElementById("status").textContent = "No connection";
+    }
+  }
+  poll();
+  setInterval(poll, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Laptop development only (mock mode). On the Pi use setup/install.sh.
+fastapi
+uvicorn
+gpiozero
+# Tapo C210 camera (optional)
+opencv-python
+onvif-zeep

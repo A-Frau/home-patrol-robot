@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+photos/
+photo.jpg
+.env
+tapo_photo.jpg
+latency.jpg
+.idea/
+CLAUDE.backup-*.md
+CLAUDE.md
