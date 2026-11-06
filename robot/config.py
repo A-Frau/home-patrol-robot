@@ -63,6 +63,9 @@ TAPO_FPS = 10            # frames per second sent to the web page (saves CPU on 
 TAPO_JPEG_QUALITY = 75
 TAPO_PAN_STEP = 0.1      # one button press moves this far (ONVIF range is -1 to 1)
 TAPO_TILT_STEP = 0.1
+# Flip pan/tilt if a camera button moves the wrong way (set in .env: true/1/yes)
+TAPO_PAN_INVERTED = os.environ.get("TAPO_PAN_INVERTED", "").strip().lower() in ("true", "1", "yes")
+TAPO_TILT_INVERTED = os.environ.get("TAPO_TILT_INVERTED", "").strip().lower() in ("true", "1", "yes")
 # Folder with the ONVIF WSDL files (devicemgmt.wsdl, ...). Empty = search the usual
 # install places (see robot/tapo.py find_wsdl_dir).
 TAPO_WSDL_DIR = os.environ.get("TAPO_WSDL_DIR", "")

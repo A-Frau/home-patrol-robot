@@ -98,6 +98,10 @@ class TapoPanTilt:
         if direction not in self.MOVES:
             raise ValueError(f"Unknown direction: {direction}")
         sx, sy = self.MOVES[direction]
+        if config.TAPO_PAN_INVERTED:
+            sx = -sx
+        if config.TAPO_TILT_INVERTED:
+            sy = -sy
         dx, dy = sx * config.TAPO_PAN_STEP, sy * config.TAPO_TILT_STEP
         if self._use_relative:
             try:
